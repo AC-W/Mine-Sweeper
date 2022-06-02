@@ -1,6 +1,7 @@
 const canvas = document.querySelector('canvas');
 const button_cheats = document.querySelector('#assisted');
 const button_new_game = document.querySelector('#new_game');
+const button_difficulty = document.querySelector('#difficulty');
 
 var milisec = 0;
 var sec = 0;
@@ -14,7 +15,7 @@ const Ysize = 10;
 const BlockSize = 20;
 const initalX = innerWidth/2-120;
 const initalY = 10;
-var	numberOfBombs = 40;
+var	numberOfBombs = 10;
 
 var closestIndex = new Array(2); //closestIndex[0] = x, [1] = y
 
@@ -507,9 +508,26 @@ function clearTimer() {
 	ele.innerHTML = '00:00';
 }
 
+function difficulty_change(){
+	if(button_difficulty.value === 'Easy (10)'){
+		numberOfBombs = 20;
+		button_difficulty.value = "Medium (20)";
+	}
+	else if(button_difficulty.value === 'Medium (20)'){
+		numberOfBombs = 30;
+		button_difficulty.value = "Hard (30)";
+	}
+	else if(button_difficulty.value === 'Hard (30)'){
+		numberOfBombs = 10;
+		button_difficulty.value = "Easy (10)";
+	}
+}
+
 button_cheats.addEventListener('click',cheatsEnable);
 
 button_new_game.addEventListener('click',newGame);
+
+button_difficulty.addEventListener('click',difficulty_change);
 
 window.addEventListener('click',findClosestBlock);
 
