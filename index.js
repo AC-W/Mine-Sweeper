@@ -12,15 +12,15 @@ var ele = document.getElementById('timer');
 const ctx =  canvas.getContext('2d');
 const Xsize = 10;
 const Ysize = 10;
-const BlockSize = 20;
-const initalX = innerWidth/2-120;
+const BlockSize = 40;
+const initalX = innerWidth/2-215;
 const initalY = 10;
 var	numberOfBombs = 10;
 
 var closestIndex = new Array(2); //closestIndex[0] = x, [1] = y
 
 canvas.width = innerWidth;
-canvas.height = 270;
+canvas.height = 500;
 
 class GameState{
 	constructor(numberOfBombs){
@@ -62,7 +62,7 @@ class Block {
 	drawNumbers(color){
 		if (this.number != 0){
 			ctx.fillStyle = color;
-			ctx.font = '12px serif';
+			ctx.font = '14px serif';
 			ctx.fillText(this.number.toString(10),this.x+BlockSize/3,this.y+BlockSize/1.5);
 		}
 	}
@@ -323,7 +323,7 @@ function gameSolver(){
 				if(gameBoard[x][y].checked == false){
 					gameBoard[x][y].draw('black');
 					ctx.fillStyle = 'red';
-					ctx.font = '12px serif';
+					ctx.font = '14px serif';
 					if (gameBoard[x][y].percentageOfBomb == 0){
 						ctx.fillText('B',gameBoard[x][y].x+BlockSize/3,gameBoard[x][y].y+BlockSize/1.5);
 					}
