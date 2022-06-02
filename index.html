@@ -1,9 +1,30 @@
+<!DOCTYPE html>
 <html>
 	<head>
+		<meta charset="UTF-8">
+		<meta name="description" content="Ryan's personal website">
+		<meta name="author" content="Ryan Wei">
+		<meta name="keywords" content="Personal, Projects, Ryan">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Lato&family=Quicksand:wght@600&display=swap" rel="stylesheet">
 		<link rel="stylesheet" type="text/css" href="style.css">
+		<title>Mine Sweeper</title>
 	</head>
 	<body>
 		<canvas></canvas>
+		
+		<form class="menu-container">
+			<input type="button" value="New Game" id="new_game">
+			<input type="button" value="Enable Assistence" id="assisted">
+		</form>
+		<div id="js_timer">
+			<div id="timer">
+				00:00
+			</div>
+		</div>
+		<h1>Mine Sweeper</h1>
 		<script src="index.js"></script>
 	</body>
 
