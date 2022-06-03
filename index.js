@@ -13,14 +13,12 @@ const ctx =  canvas.getContext('2d');
 const Xsize = 10;
 const Ysize = 10;
 const BlockSize = 40;
-const initalX = innerWidth/2-215;
-const initalY = 10;
+const initalX = 0;
+const initalY = 0;
 var	numberOfBombs = 10;
 
 var closestIndex = new Array(2); //closestIndex[0] = x, [1] = y
 
-canvas.width = innerWidth;
-canvas.height = 500;
 
 class GameState{
 	constructor(numberOfBombs){
@@ -41,7 +39,8 @@ class Block {
 		this.obj = obj; 
 		// 0 = empty 
 		// 1 = bomb
-		// 2 = numbered 
+		// 2 = numbered
+		this.flaged = false;
 
 		this.number = number;
 		//0 = do not display the number
@@ -71,44 +70,32 @@ class Block {
 //Creating GameBoard:
 var gameBoard = new Array(Xsize);
 
-//Creating GameState
-game = new GameState(numberOfBombs);
-
-function findClosestBlock(){
-	var clickedX = event.clientX;
-	var clickedY = event.clientY;
-	if ((clickedX < gameBoard[0][0].x) || (clickedX > gameBoard[0][Ysize-1].x+BlockSize)){
-		return;
-	}
-	if ((clickedY < gameBoard[0][0].y) || (clickedY > gameBoard[Xsize-1][0].y+BlockSize+4)){
-		return;
-	}
-	var smallestdx = Math.abs(clickedX-gameBoard[0][0].x+BlockSize/2);
-	var smallestdy = Math.abs(clickedX-gameBoard[0][0].y+BlockSize/2);
-	closestIndex[0] = 0;
-	closestIndex[1] = 0;
-
-	for (var indexX = 0; indexX < Xsize;indexX++){
-		var newdx = Math.abs(clickedX-(gameBoard[0][indexX].x+BlockSize/2));
-		if (newdx < smallestdx){
-			closestIndex[0] = indexX;
-			smallestdx = newdx;
-		}
-	}
-	for(var indexY = 0; indexY < Ysize;indexY++){
-		var newdy = Math.abs(clickedY-(gameBoard[indexY][0].y+BlockSize/2));
-		if (newdy < smallestdy){
-			closestIndex[1] = indexY;
-			smallestdy = newdy;
-		}
-	}
-}
-
 for (var x = 0; x < Xsize;x++){
 	gameBoard[x] = new Array(Ysize);
 	for(var y = 0; y < Ysize;y++){
 		gameBoard[x][y] = new Block(y*(BlockSize+4)+initalX,x*(BlockSize+4)+initalY,0,0);
-		gameBoard[x][y].draw('black');
+	}
+}
+
+canvas.width = gameBoard[0][Ysize-1].x - gameBoard[0][0].x + (BlockSize+1);
+canvas.height = gameBoard[Xsize-1][0].y - gameBoard[0][0].y + (BlockSize+1);
+
+//Creating GameState
+game = new GameState(numberOfBombs);
+
+function findClosestBlock(clickedX,clickedY){
+
+	for (var indexX = 0; indexX < Xsize;indexX++){
+		if (clickedX >= gameBoard[0][indexX].x && clickedX <= gameBoard[0][indexX].x+BlockSize){
+			closestIndex[0] = indexX;
+			break;
+		}
+	}
+	for(var indexY = 0; indexY < Ysize;indexY++){
+		if (clickedY >= gameBoard[indexY][0].y && clickedY <= gameBoard[indexY][0].y+BlockSize){
+			closestIndex[1] = indexY;
+			break;
+		}
 	}
 }
 
@@ -155,6 +142,7 @@ function clearChecked() {
 function checkNeighbours(xloc,yloc){
 	if (gameBoard[xloc][yloc].checked == false){
 		gameBoard[xloc][yloc].checked = true;
+		gameBoard[xloc][yloc].flaged = false;
 		for (var tempX = -1; tempX<=1;tempX++){
 			for(var tempY = -1; tempY<=1;tempY++){
 				if (tempY != 0 || tempX != 0){
@@ -164,6 +152,7 @@ function checkNeighbours(xloc,yloc){
 						}
 						if (gameBoard[xloc+tempX][yloc+tempY].obj == 2 && gameBoard[xloc+tempX][yloc+tempY].checked == false){
 							gameBoard[xloc+tempX][yloc+tempY].checked = true;
+							gameBoard[xloc+tempX][yloc+tempY].flaged = false;
 						}
 					}
 				}
@@ -211,10 +200,12 @@ function checkGameState(){
 		return;
 	}
 	game.win = true;
+	game.over = true;
 	for (var x = 0; x < Xsize;x++){
 		for(var y = 0; y < Ysize;y++){
 			if(!gameBoard[x][y].checked && gameBoard[x][y].obj != 1){
 				game.win = false;
+				game.over = false;
 				return;
 			}
 		}
@@ -246,7 +237,7 @@ function DrawEndScreen(){
 		ctx.fillText("You Win",gameBoard[Math.floor(Xsize/2)][Math.floor(Ysize/2)].x-50,gameBoard[Math.floor(Xsize/2)][Math.floor(Ysize/2)].y+10);
 		return;
 	}
-	if (game.over){
+	else if (game.over){
 		ctx.fillText("You Lost",gameBoard[Math.floor(Xsize/2)][Math.floor(Ysize/2)].x-50,gameBoard[Math.floor(Xsize/2)][Math.floor(Ysize/2)].y+10);
 		return;
 	}
@@ -321,7 +312,6 @@ function gameSolver(){
 		for (var x = 0; x < Xsize;x++){
 			for(var y = 0; y < Ysize;y++){
 				if(gameBoard[x][y].checked == false){
-					gameBoard[x][y].draw('black');
 					ctx.fillStyle = 'red';
 					ctx.font = '14px serif';
 					if (gameBoard[x][y].percentageOfBomb == 0){
@@ -348,7 +338,6 @@ function generateBombs() {
 		if (gameBoard[xloc][yloc].obj == 0 && xloc != closestIndex[1] || yloc != closestIndex[0]){
 			gameBoard[xloc][yloc].obj = 1;
 			bombs++;
-			gameBoard[xloc][yloc].draw('black');
 		}
 	}
 }
@@ -363,6 +352,9 @@ function redrawBoard(){
 			else{
 				gameBoard[x][y].draw('grey');
 				gameBoard[x][y].drawNumbers('white')
+			}
+			if (gameBoard[x][y].flaged){
+				gameBoard[x][y].draw('blue');
 			}
 		}
 	}
@@ -383,6 +375,7 @@ function numberOfUnknowns(){
 function animate(){
 	requestAnimationFrame(animate);
 	if(game.over == false){
+		redrawBoard();
 		if (closestIndex[0] !== undefined && closestIndex[1] !== undefined){
 			if (!game.start){
 				game.start = true;
@@ -523,13 +516,66 @@ function difficulty_change(){
 	}
 }
 
+function clickHandler() {
+	var rect = canvas.getBoundingClientRect();
+	var clickedX = event.clientX - rect.left;
+	var clickedY = event.clientY - rect.top;
+	if ((clickedX < gameBoard[0][0].x) || (clickedX > gameBoard[0][Ysize-1].x+BlockSize)){
+		return;
+	}
+	if ((clickedY < gameBoard[0][0].y) || (clickedY > gameBoard[Xsize-1][0].y+BlockSize)){
+		return;
+	}
+	if (event.button === 0){
+		findClosestBlock(clickedX,clickedY);
+		if(gameBoard[closestIndex[1]][closestIndex[0]].flaged){
+			closestIndex[0] = undefined;
+			closestIndex[1] = undefined;
+		}
+	}
+	else if (event.button === 2){
+		closestIndex[1] = undefined;
+		closestIndex[0] = undefined;
+		findClosestBlock(clickedX,clickedY);
+		if (closestIndex[1] !== undefined && closestIndex[0] !== undefined && gameBoard[closestIndex[1]][closestIndex[0]].checked == false){
+			if (gameBoard[closestIndex[1]][closestIndex[0]].flaged){
+			gameBoard[closestIndex[1]][closestIndex[0]].flaged = false;
+			}
+			else{
+				gameBoard[closestIndex[1]][closestIndex[0]].flaged = true;
+			}
+			closestIndex[1] = undefined;
+			closestIndex[0] = undefined;
+			console.log('right clicked');
+		}
+	}
+}
+
 button_cheats.addEventListener('click',cheatsEnable);
 
 button_new_game.addEventListener('click',newGame);
 
 button_difficulty.addEventListener('click',difficulty_change);
 
-window.addEventListener('click',findClosestBlock);
+if (!game.over && !game.win){
+	window.addEventListener('mousedown',clickHandler);
+
+	window.oncontextmenu = (rightClicked) => {
+		if (rightClicked.button === 2){
+			var rect = canvas.getBoundingClientRect();
+			var clickedX = event.clientX - rect.left;
+			var clickedY = event.clientY - rect.top;
+			if ((clickedX < gameBoard[0][0].x) || (clickedX > gameBoard[0][Ysize-1].x+BlockSize)){
+				return;
+			}
+			if ((clickedY < gameBoard[0][0].y) || (clickedY > gameBoard[Xsize-1][0].y+BlockSize+4)){
+				return;
+			}
+			rightClicked.preventDefault();
+		}
+	}
+}
+
 
 animate();
 
