@@ -3,6 +3,9 @@ const button_cheats = document.querySelector('#assisted');
 const button_new_game = document.querySelector('#new_game');
 const button_difficulty = document.querySelector('#difficulty');
 
+const Flag = document.getElementById('Flag');
+const Mine = document.getElementById('Mine');
+
 var milisec = 0;
 var sec = 0;
 var minute = 0;
@@ -52,11 +55,19 @@ class Block {
 	}
 
 	draw(color){
-		ctx.beginPath();
-		ctx.rect(this.x,this.y,BlockSize,BlockSize);
-		ctx.strokeRect(this.x, this.y, BlockSize, BlockSize);
-		ctx.fillStyle = color;
-		ctx.fill();
+		if (color == 'blue'){
+			ctx.drawImage(Flag,this.x+BlockSize/8,this.y+BlockSize/8,30,30);
+		}
+		else if(color == 'red'){
+			ctx.drawImage(Mine,this.x+BlockSize/8,this.y+BlockSize/8,30,30);
+		}
+		else{
+			ctx.beginPath();
+			ctx.rect(this.x,this.y,BlockSize,BlockSize);
+			ctx.strokeRect(this.x, this.y, BlockSize, BlockSize);
+			ctx.fillStyle = color;
+			ctx.fill();
+		}
 	}
 	drawNumbers(color){
 		if (this.number != 0){
@@ -139,27 +150,12 @@ function clearChecked() {
 	}
 }
 
-function checkNeighbours(xloc,yloc){
-	if (gameBoard[xloc][yloc].checked == false){
-		gameBoard[xloc][yloc].checked = true;
-		gameBoard[xloc][yloc].flaged = false;
-		for (var tempX = -1; tempX<=1;tempX++){
-			for(var tempY = -1; tempY<=1;tempY++){
-				if (tempY != 0 || tempX != 0){
-					if (xloc+tempX >= 0 && yloc+tempY >= 0 && xloc+tempX < Xsize && yloc+tempY < Ysize){
-						if (gameBoard[xloc+tempX][yloc+tempY].obj == 0 && gameBoard[xloc+tempX][yloc+tempY].checked == false){
-							checkNeighbours(xloc+tempX,yloc+tempY);
-						}
-						if (gameBoard[xloc+tempX][yloc+tempY].obj == 2 && gameBoard[xloc+tempX][yloc+tempY].checked == false){
-							gameBoard[xloc+tempX][yloc+tempY].checked = true;
-							gameBoard[xloc+tempX][yloc+tempY].flaged = false;
-						}
-					}
-				}
-			}
-		}
+function wait(ms){
+	let startTime = new Date();
+	let endTime = new Date();
+	while(ms > endTime - startTime){
+		endTime = new Date();
 	}
-	return;
 }
 
 function generateIndexedArray(arrSize) {
@@ -197,6 +193,7 @@ function checkGameState(){
 		gameBoard[closestIndex[1]][closestIndex[0]].draw('red');
 		showBoard();
 		game.over = true;
+		animating = false;
 		return;
 	}
 	game.win = true;
@@ -345,7 +342,6 @@ function generateBombs() {
 function redrawBoard(){
 	for (var x = 0; x < Xsize;x++){
 		for (var y = 0; y < Ysize;y++){
-
 			if (gameBoard[x][y].checked == false){
 				gameBoard[x][y].draw('black');
 			}
@@ -372,19 +368,79 @@ function numberOfUnknowns(){
 	return count;
 }
 
+var animationStackX = [];
+var animationStackY = [];
+
+var animating = false;
+
+function checkNeighbours(xloc,yloc){
+	if (gameBoard[xloc][yloc].checked == false){
+		animating = true;
+		animationStackX.push(xloc);
+		animationStackY.push(yloc);
+		gameBoard[xloc][yloc].checked = true;
+		gameBoard[xloc][yloc].flaged = false;
+		var X = [];
+		var Y = [];
+		for (var tempX = -1; tempX<=1;tempX++){
+			for(var tempY = -1; tempY<=1;tempY++){
+				if (tempY != 0 || tempX != 0){
+					if (xloc+tempX >= 0 && yloc+tempY >= 0 && xloc+tempX < Xsize && yloc+tempY < Ysize){
+						if (gameBoard[xloc+tempX][yloc+tempY].obj === 0 && gameBoard[xloc+tempX][yloc+tempY].checked == false){
+							X.push(xloc+tempX);
+							Y.push(yloc+tempY);
+						}
+						if (gameBoard[xloc+tempX][yloc+tempY].obj === 2 && gameBoard[xloc+tempX][yloc+tempY].checked == false){
+							gameBoard[xloc+tempX][yloc+tempY].checked = true;
+							gameBoard[xloc+tempX][yloc+tempY].flaged = false;
+							animationStackX.push(xloc+tempX);
+							animationStackY.push(yloc+tempY);
+						}
+					}
+				}
+			}
+		}
+		for (var x = 0; x < X.length;x++){
+			checkNeighbours(X[x],Y[x]);
+		}
+	}
+	return;
+}
+
+
+function animation(){
+	var animationIndex = new Array(2);
+	if (animationStackX.length === 0 || animationStackY.length === 0){
+		animating = false;
+		return;
+	}
+	animationIndex[0] = animationStackX.pop();
+	animationIndex[1] = animationStackY.pop();
+	gameBoard[animationIndex[0]][animationIndex[1]].draw('grey');
+	gameBoard[animationIndex[0]][animationIndex[1]].drawNumbers('white');
+	wait(30);
+}
+
 function animate(){
 	requestAnimationFrame(animate);
-	if(game.over == false){
+	if (animating){
+		animation();
+	}
+	else if(game.over == false){
 		redrawBoard();
 		if (closestIndex[0] !== undefined && closestIndex[1] !== undefined){
 			if (!game.start){
 				game.start = true;
 				generateBoard();
 				startTimer();
+				animationStackX = [];
+				animationStackY = [];
+				animating = false;
 			}
 			checkNeighbours(closestIndex[1],closestIndex[0]);
-			redrawBoard();
-			if (game.cheats == true){
+			animationStackY = animationStackY.reverse();
+			animationStackX = animationStackX.reverse();
+			if (game.cheats){
 				gameSolver();
 			}
 			checkGameState();
@@ -408,6 +464,7 @@ function generateBoard(){
 		generateBombs();
 		checkNumbers();
 		checkNeighbours(closestIndex[1],closestIndex[0]);
+		animating = false;
 		while (1){
 			var newMove = new Array(2);
 			newMove = gameSolver();
@@ -421,6 +478,7 @@ function generateBoard(){
 				break;
 			}
 			checkNeighbours(newMove[0],newMove[1]);
+			animating = false;
 		}
 		if (!validBoard){
 			console.log("bad board.");
@@ -528,10 +586,13 @@ function clickHandler() {
 	}
 	if (event.button === 0){
 		findClosestBlock(clickedX,clickedY);
-		if(gameBoard[closestIndex[1]][closestIndex[0]].flaged){
-			closestIndex[0] = undefined;
-			closestIndex[1] = undefined;
+		if (closestIndex[1] !== undefined && closestIndex[0] != undefined){
+			if(gameBoard[closestIndex[1]][closestIndex[0]].flaged){
+				closestIndex[0] = undefined;
+				closestIndex[1] = undefined;
+			}
 		}
+		
 	}
 	else if (event.button === 2){
 		closestIndex[1] = undefined;
